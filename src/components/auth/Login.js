@@ -1,13 +1,13 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
+import { View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity } from "react-native";
 
-export default function LoginScreen({ onLogin }) {
+export default function LoginScreen({ onLogin, navigation }) { // Tambahkan 'navigation' di props
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
     try {
-      const response = await fetch("http://192.168.1.3:8000/api/auth/login", {
+      const response = await fetch("http://192.168.56.1:3000/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -36,6 +36,7 @@ export default function LoginScreen({ onLogin }) {
         placeholder="Username"
         value={username}
         onChangeText={setUsername}
+        autoCapitalize="none"
       />
       <TextInput
         style={styles.input}
@@ -45,6 +46,14 @@ export default function LoginScreen({ onLogin }) {
         onChangeText={setPassword}
       />
       <Button title="Login" onPress={handleLogin} />
+      
+      {/* Tambahkan tombol navigasi ke Register */}
+      <View style={styles.registerContainer}>
+        <Text>Don't have an account?</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+          <Text style={styles.registerText}> Register</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -54,11 +63,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     padding: 20,
+    backgroundColor: "#fff", // Tambahkan background color agar konsisten
   },
   title: {
     fontSize: 24,
     marginBottom: 20,
     textAlign: "center",
+    color: "#2464EC", // Sesuaikan warna sesuai tema
   },
   input: {
     borderWidth: 1,
@@ -66,5 +77,14 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 20,
     borderRadius: 5,
+  },
+  registerContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 20,
+  },
+  registerText: {
+    color: "#2464EC",
+    fontWeight: "bold",
   },
 });

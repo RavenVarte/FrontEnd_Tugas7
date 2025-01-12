@@ -3,15 +3,17 @@ import { View, Text, TextInput, Button, FlatList, StyleSheet, TouchableOpacity, 
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://192.168.1.3:8000/api/todos';
+const API_URL = 'http://192.168.56.1:3000/api/todos';
 
 export default function TodoList() {
   const [todos, setTodos] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [price, setPrice] = useState('');
   const [token, setToken] = useState('');
-  const [editTodoId, setEditTodoId] = useState(null); // Untuk melacak todo yang sedang diedit
+  const [editTodoId, setEditTodoId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchTodos = async () => {
@@ -36,7 +38,7 @@ export default function TodoList() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ title, description }),
+      body: JSON.stringify({ title, description, price }),
     });
 
     const result = await response.json();
@@ -45,6 +47,7 @@ export default function TodoList() {
       setTodos((prev) => [result.data, ...prev]);
       setTitle('');
       setDescription('');
+      setPrice('');
       setShowForm(false);
     } else {
       alert(result.message || 'Error adding todo');
@@ -58,7 +61,7 @@ export default function TodoList() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ title, description }),
+      body: JSON.stringify({ title, description, price }),
     });
 
     const result = await response.json();
@@ -66,11 +69,12 @@ export default function TodoList() {
     if (response.ok) {
       setTodos((prev) =>
         prev.map((todo) =>
-          todo._id === editTodoId ? { ...todo, title, description } : todo
+          todo._id === editTodoId ? { ...todo, title, description, price } : todo
         )
       );
       setTitle('');
       setDescription('');
+      setPrice('');
       setShowForm(false);
       setEditTodoId(null);
     } else {
@@ -96,44 +100,75 @@ export default function TodoList() {
   const handleCancelEdit = () => {
     setTitle('');
     setDescription('');
+    setPrice('');
     setShowForm(false);
     setEditTodoId(null);
   };
 
+  const filteredTodos = todos.filter((todo) =>
+    todo.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>My Todos</Text>
+      <Text style={styles.header}>Room Hotel</Text>
+
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Cari Pengguna Ruangan"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
 
       {showForm ? (
         <View style={styles.formContainer}>
           <TextInput
             style={styles.input}
-            placeholder="Title"
+            placeholder="Pengguna Ruangan"
             value={title}
             onChangeText={setTitle}
           />
           <TextInput
             style={styles.input}
-            placeholder="Description"
+            placeholder="Durasi Check-in (contoh: 2 hari)"
             value={description}
             onChangeText={setDescription}
           />
-          <Button title={editTodoId ? "Update Todo" : "Add Todo"} onPress={editTodoId ? handleEditTodo : handleAddTodo} />
+          <TextInput
+            style={styles.input}
+            placeholder="Harga (contoh: Rp500.000)"
+            value={price}
+            onChangeText={setPrice}
+            keyboardType="numeric"
+          />
+          <Button
+            title={editTodoId ? 'Update Data' : 'Tambah Data'}
+            onPress={editTodoId ? handleEditTodo : handleAddTodo}
+          />
           <Button title="Cancel" color="red" onPress={handleCancelEdit} />
         </View>
       ) : (
         <>
           <FlatList
-            data={todos}
+            data={filteredTodos}
             keyExtractor={(item) => item._id}
             renderItem={({ item }) => (
               <View style={styles.todoItem}>
                 <View>
                   <Text style={styles.todoTitle}>{item.title}</Text>
-                  <Text>{item.description}</Text>
+                  <Text>{`Durasi: ${item.description}`}</Text>
+                  <Text>{`Harga: ${item.price}`}</Text>
                 </View>
                 <View style={styles.actionButtons}>
-                  <TouchableOpacity onPress={() => { setEditTodoId(item._id); setTitle(item.title); setDescription(item.description); setShowForm(true); }}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setEditTodoId(item._id);
+                      setTitle(item.title);
+                      setDescription(item.description);
+                      setPrice(item.price);
+                      setShowForm(true);
+                    }}
+                  >
                     <Icon name="create" size={20} color="#2464EC" />
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => handleDeleteTodo(item._id)}>
@@ -165,6 +200,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 20,
   },
   formContainer: {
     marginBottom: 20,

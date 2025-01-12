@@ -52,38 +52,53 @@ function MainTabNavigator({ handleLogout }) {
     </Tab.Navigator>
   );
 }
-
 export default function App() {
   const [isSplashVisible, setSplashVisible] = useState(true);
   const [isLoggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => {
     const checkLoginStatus = async () => {
-      const tokenData = await AsyncStorage.getItem("token");
-      if (tokenData) {
-        const { token, expiry } = JSON.parse(tokenData);
-        const now = new Date();
-        if (new Date(expiry) > now) {
-          setLoggedIn(true);
-        } else {
-          await AsyncStorage.removeItem("token");
+      try {
+        const tokenData = await AsyncStorage.getItem("token");
+        if (tokenData) {
+          const parsedTokenData = JSON.parse(tokenData);
+          const { token, expiry } = parsedTokenData;
+          const now = new Date();
+          if (new Date(expiry) > now) {
+            setLoggedIn(true);
+          } else {
+            await AsyncStorage.removeItem("token");
+          }
         }
+      } catch (error) {
+        console.error("Error checking login status:", error);
+      } finally {
+        setSplashVisible(false);
       }
-      setSplashVisible(false);
     };
     checkLoginStatus();
   }, []);
 
   const handleLogin = async (token) => {
-    const expiry = new Date();
-    expiry.setDate(expiry.getDate() + TOKEN_EXPIRATION_DAYS);
-    await AsyncStorage.setItem("token", JSON.stringify({ token, expiry: expiry.toISOString() }));
-    setLoggedIn(true);
+    try {
+      const expiry = new Date();
+      expiry.setDate(expiry.getDate() + TOKEN_EXPIRATION_DAYS);
+      await AsyncStorage.setItem("token", JSON.stringify({ token, expiry: expiry.toISOString() }));
+      setLoggedIn(true);
+    } catch (error) {
+      console.error("Error handling login:", error);
+      Alert.alert("Error", "Failed to login. Please try again.");
+    }
   };
 
   const handleLogout = async () => {
-    await AsyncStorage.removeItem("token");
-    setLoggedIn(false);
+    try {
+      await AsyncStorage.removeItem("token");
+      setLoggedIn(false);
+    } catch (error) {
+      console.error("Error handling logout:", error);
+      Alert.alert("Error", "Failed to logout. Please try again.");
+    }
   };
 
   return (
@@ -104,7 +119,6 @@ export default function App() {
                 <Stack.Screen name="Home" options={{ headerShown: false }}>
                   {props => <MainTabNavigator {...props} handleLogout={handleLogout} />}
                 </Stack.Screen>
-             
               </>
             ) : (
               <>
